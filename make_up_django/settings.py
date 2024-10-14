@@ -8,7 +8,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "default-secret-key")
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['your-service-name.onrender.com', 'localhost']
+ALLOWED_HOSTS = ['https://makeup-let.onrender.com', 'localhost']
 
 # Application definition
 
