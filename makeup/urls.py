@@ -3,5 +3,5 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('video_feed/', views.video_feed, name='video_feed'),
+    path('receive_frame/', views.receive_frame, name='receive_frame'),
 ]
