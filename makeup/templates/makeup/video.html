@@ -7,6 +7,59 @@
 </head>
 <body>
     <h1>Live Makeup Application</h1>
-    <img src="{% url 'video_feed' %}" alt="Video Feed"/>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="processed-frame" alt="Processed Video Frame"/>
+
+    <script>
+        // Access the webcam stream
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const processedFrame = document.getElementById('processed-frame');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Error accessing webcam:", error);
+            });
+
+        // Function to send frame to the server for processing
+        async function sendFrameToServer(imageData) {
+            try {
+                const response = await fetch('/receive_frame/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token
+                    },
+                    body: `frame=${encodeURIComponent(imageData)}`
+                });
+                const data = await response.json();
+                
+                // Update the processed frame with the server's response
+                if (data.processed_frame) {
+                    processedFrame.src = data.processed_frame;
+                }
+            } catch (error) {
+                console.error("Error sending frame to server:", error);
+            }
+        }
+
+        // Capture a frame from the video every 100ms and send it to the server
+        setInterval(() => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get the base64-encoded image from the canvas
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            // Send the image to the server for processing
+            sendFrameToServer(imageData);
+        }, 100);  // Capture frame every 100 milliseconds
+    </script>
 </body>
 </html>
