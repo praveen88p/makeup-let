@@ -1,27 +1,41 @@
 import cv2
-from django.http import StreamingHttpResponse
+import numpy as np
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from .make_up import MakeupApplication
-
+import base64
 
 def index(request):
+    """Render the main page."""
     return render(request, 'makeup/video.html')
 
 
-def generate_video(makeup_app):
-    cap = cv2.VideoCapture(0)
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
+def receive_frame(request):
+    """Receive a frame from the client, process it, and return the processed image."""
+    if request.method == 'POST':
+        # Get the base64-encoded frame sent from the client
+        frame_data = request.POST.get('frame')
+        
+        # Decode the base64 image
+        frame_data = frame_data.split(',')[1]  # Remove the data URL prefix
+        frame_bytes = base64.b64decode(frame_data)
+        
+        # Convert the image bytes into a NumPy array
+        np_arr = np.frombuffer(frame_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-        frame = makeup_app.process_frame(frame)
-        ret, jpeg = cv2.imencode('.jpg', frame)
-        frame = jpeg.tobytes()
+        # Process the frame with the MakeupApplication class
+        makeup_app = MakeupApplication()
+        processed_frame = makeup_app.process_frame(frame)
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+        # Encode the processed frame to JPEG
+        _, jpeg = cv2.imencode('.jpg', processed_frame)
+        processed_frame_bytes = jpeg.tobytes()
 
-def video_feed(request):
-    makeup_app = MakeupApplication()
-    return StreamingHttpResponse(generate_video(makeup_app), content_type='multipart/x-mixed-replace; boundary=frame')
+        # Convert the image to base64 to send back to the client
+        processed_frame_b64 = base64.b64encode(processed_frame_bytes).decode('utf-8')
+
+        # Send the processed frame back to the client
+        return JsonResponse({'processed_frame': 'data:image/jpeg;base64,' + processed_frame_b64})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
