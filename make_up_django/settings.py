@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-7_%g@)1_u6duwjq(sqx3n_t8id&#&m*#-9qh*7b71=f$)c4#6l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['https://makeup-let.onrender.com']
 
 
 # Application definition
